@@ -313,7 +313,7 @@ ui <- navbarPage("River Erosion Model",
                                     size = "extra-small")),
                         bsPopover(id = "q13",
                                   title = "Grain Sizes",
-                                  content = "Each reach can have a unique gran size distribution based on supplied D50 and spread.",
+                                  content = "Each reach can have a unique grain size distribution based on supplied D50 and spread. The spread is the geometric standard deviation of the grain size distribution.",
                                   placement = "left",
                                   trigger = "hover"),
                         rHandsontableOutput("gsd"))
@@ -547,12 +547,29 @@ ui <- navbarPage("River Erosion Model",
                  tabPanel("XS Plots",
                           
                           fluidRow(
-                            column(6, align = "center",
-                                   textInput("XS_reach", "Enter reach numbers to plot XS [separate by comma]",
-                                             "1")),
-                            column(6, align = "center",
-                                   textInput("XS_numbers", "Enter XS numbers [one for each reach, separate by comma]",
-                                             "1"))
+                            # column(6, align = "center",
+                            #        textInput("XS_reach", "Enter reach numbers to plot XS [separate by comma]",
+                            #                  "1")),
+                            # column(6, align = "center",
+                            #        textInput("XS_numbers", "Enter XS numbers [one for each reach, separate by comma]",
+                            #                  "1"))
+                            column(12, align = "center",
+                                   numericInput("n_XS_plot", "Enter number of XS to plot", 1))
+                          ),
+                          
+                          fluidRow(
+                            column(3),
+                            column(6, h3("Enter reach and XS numbers for each XS to plot:"),
+                            rHandsontableOutput("XS_plot_numbers")),
+                            column(3)
+                            
+                          ),
+                          
+                          br(),
+                          
+                          fluidRow(
+                            column(12, align = "center", 
+                                   h3(textOutput("XS_plot_error"), style = "color:red"))
                           ),
                           
                           br(),

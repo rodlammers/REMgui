@@ -95,7 +95,8 @@ server <- function(input, output, session){
                        rep(1 + input$n_reaches, input$n_reaches)), nrow = 2, byrow = TRUE)
     }
     rhandsontable(data = link,
-                  colHeaders = 1:input$n_reaches)
+                  colHeaders = 1:input$n_reaches) %>%
+      hot_col(col = 1:input$n_reaches, format = "0")
   })
   
   observeEvent(input$plot_network, {
@@ -108,7 +109,8 @@ server <- function(input, output, session){
   
   output$slope <- renderRHandsontable({
     rhandsontable(data = data.frame(slope = rep(0, input$n_reaches)),
-                  colHeaders = "Initial Slope [m/m]")
+                  colHeaders = "Initial Slope [m/m]", digits = 5) %>%
+      hot_col(col = 1, type = "numeric", format = "0.00000")
   })
   
   output$length <- renderRHandsontable({
@@ -155,7 +157,8 @@ server <- function(input, output, session){
                                     fp_n = rep(0.06, input$n_reaches)),
                   colHeaders = c("Channel n",
                                  "Floodplain n"),
-                  rowHeaders = 1:input$n_reaches)
+                  rowHeaders = 1:input$n_reaches) %>%
+      hot_col(col = 1:2, format = "0.000")
   })
   
   observeEvent(input$save_Ds, {
@@ -186,7 +189,8 @@ server <- function(input, output, session){
   })
   
   output$Ds <- renderRHandsontable({
-    rhandsontable(Ds_new())
+    rhandsontable(Ds_new()) %>%
+      hot_col(col = 1, format = "0.00")
   })
   
   output$gsd <- renderRHandsontable({
@@ -353,46 +357,73 @@ server <- function(input, output, session){
   
   #XS Plots
   
+  output$XS_plot_numbers <- renderRHandsontable({
+    rhandsontable(data = data.frame(Reach = rep(1, input$n_XS_plot),
+                                    XS = rep(1, input$n_XS_plot)),
+                  rowHeaders = 1:input$n_XS_plot) %>%
+      hot_col(col = 1:2, format = "0")
+  })
+  
+  # reactive({
+  #   validate(
+  #     need(sum(as.numeric(hot_to_r(input$XS_plot_numbers)$Reach) > input$n_reaches),
+  #          "No reach.")
+  #   )
+  # })
+  
+
+  
   observeEvent(input$XS_plot_button, {
-    reach <- as.numeric(unlist(strsplit(input$XS_reach, ",")))
-    XS <- as.numeric(unlist(strsplit(input$XS_numbers, ",")))
-    n_plots <- ceiling(length(reach) / 2)
+    # reach <- as.numeric(unlist(strsplit(input$XS_reach, ",")))
+    # XS <- as.numeric(unlist(strsplit(input$XS_numbers, ",")))
+    # n_plots <- ceiling(length(reach) / 2)
+    n_plots <- input$n_XS_plot
     
-    # Insert the right number of plot output objects into the web page
-    output$XS_plot <- renderUI({
-      plot_output_list <- lapply(1:n_plots, function(i) {
-        plotname <- paste("XS_plot", i, sep="")
-        plotOutput(plotname, height = 3 * 72, width = 6.5 * 72)
-      })
-      
-      # Convert the list to a tagList - this is necessary for the list of items
-      # to display properly.
-      do.call(tagList, plot_output_list)
-    })
+    reach <- as.numeric(hot_to_r(input$XS_plot_numbers)$Reach)
+    XS <- as.numeric(hot_to_r(input$XS_plot_numbers)$XS)
+
+    #Check reach and XS values
+    # validate(
+    #   need(sum(reach > input$n_reaches) > 0, "You tried to plot a XS from a reach that doesn't exist.")
+    # )
+    output$XS_plot_error <- renderText({
+      if(sum(reach > input$n_reaches) > 0){
+        paste("Sorry, there are only", input$n_reaches, "reaches.")
+      }else{
     
-    # Call renderPlot for each one. Plots are only actually generated when they
-    # are visible on the web page.
-    for (i in 1:n_plots) {
-      # Need local so that each item gets its own number. Without it, the value
-      # of i in the renderPlot() will be the same across all instances, because
-      # of when the expression is evaluated.
-      local({
-        my_i <- i
-        plotname <- paste("XS_plot", my_i, sep="")
-        reach_input <- reach[(2 * i - 1):(2 * i)]
-        reach_input <- reach_input[!is.na(reach_input)]
-        XS_input <- XS[(2 * i - 1):(2 * i)]
-        XS_input <- XS_input[!is.na(XS_input)]
-        
-        output[[plotname]] <- renderPlot({
-          XS_plots2(path = input$file_path, reach = reach_input, XS = XS_input)
+        # Insert the right number of plot output objects into the web page
+        output$XS_plot <- renderUI({
+          plot_output_list <- lapply(1:n_plots, function(i) {
+            plotname <- paste("XS_plot", i, sep="")
+            plotOutput(plotname, height = 3 * 72, width = 6.5 * 72)
+          })
+          
+          # Convert the list to a tagList - this is necessary for the list of items
+          # to display properly.
+          do.call(tagList, plot_output_list)
         })
-      })
-    }
-  #   output$XS_plot <- renderPlot({
-  #     XS_plots2(path = input$file_path, reach = reach, XS = XS)
-  #     #plot(1, 1)
-  #   }, width = 6.5 * 72, height = 3.5 * 72)
+        
+        # Call renderPlot for each one. Plots are only actually generated when they
+        # are visible on the web page.
+        for (i in 1:n_plots) {
+          # Need local so that each item gets its own number. Without it, the value
+          # of i in the renderPlot() will be the same across all instances, because
+          # of when the expression is evaluated.
+          local({
+            my_i <- i
+            plotname <- paste("XS_plot", my_i, sep="")
+            reach_input <- reach[(2 * i - 1):(2 * i)]
+            reach_input <- reach_input[!is.na(reach_input)]
+            XS_input <- XS[(2 * i - 1):(2 * i)]
+            XS_input <- XS_input[!is.na(XS_input)]
+            
+            output[[plotname]] <- renderPlot({
+              XS_plots2(path = input$file_path, reach = reach_input, XS = XS_input)
+            })
+          })
+        }
+      }
+    })
   })
   
   #D50 plot
