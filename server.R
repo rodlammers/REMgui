@@ -3,6 +3,68 @@
 #Define server
 server <- function(input, output, session){
   
+  #Load inputs buttons
+  observeEvent(input$load_inputs, {
+    #Construct Model Inputs file
+    model_inputs <- read.table(file.path(input$file_path, "Model Inputs.txt"),
+                               sep = "\t", header = TRUE)
+    
+    updateNumericInput(session, "dx", value = model_inputs$dx)
+    
+    updateNumericInput(session, "dt", value = model_inputs$dt)
+    
+    updateNumericInput(session, "dt_Q", value = model_inputs$dt_Q)
+    
+    updateSelectInput(session, "input_type", choices = list("Reach" = "reach", 
+                                                            "Profile" = "profile"),
+                      select = model_inputs$input_type)
+    
+    updateSelectInput(session, "transport_type", choices = list("Bedload" = "bedload",
+                                                                "Total load" = "total",
+                                                                "Both" = "both",
+                                                                "Eaton and Church (2011)" = "EC",
+                                                                "Parker et al. (2011)" = "Parker"),
+                      selected = model_inputs$type)
+    
+    updateSelectInput(session, "bank_erosion", choices = list("None" = "none",
+                                                              "Fluvial only" = "fluvial",
+                                                              "Failure only" = "failure",
+                                                              "Both" = "both"),
+                      selected = model_inputs$bank_erosion)
+    
+    link <- read.table(file.path(input$file_path, "Input link.txt"), sep = " ")
+    
+    n_reaches <- ncol(link)
+    
+    output$link <- renderRHandsontable({
+      rhandsontable(data = link,
+                    colHeaders = 1:n_reaches) %>%
+        hot_col(col = 1:n_reaches, format = "0")
+    })
+    
+    updateNumericInput(session, "n_reaches", value = n_reaches)
+    
+    #Length
+    lengths <- read.table(file.path(input$file_path, "Input length.txt"))
+    output$length <- renderRHandsontable({
+      rhandsontable(data = lengths,
+                    colHeaders = "Reach Lengths [m]")
+    })
+    
+    #Cohesive bed
+    bed_cohesive <- read.table(file.path(input$file_path, "Input bed cohesive.txt"))
+    output$bed_cohesive <- renderRHandsontable({
+      rhandsontable(data = bed_cohesive,
+                    colHeaders = c("Depth to Cohesive Layer [m]",
+                                   "Cohesive Layer tau_c [Pa]"))
+    })
+    
+    #Slopes
+    bed_z <- read.table(file.path(input$file_path, "Input z.txt"))
+    
+                          
+  })
+  
   #Save inputs buttons
   observeEvent(input$save_inputs, {
     #Construct Model Inputs file

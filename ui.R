@@ -49,6 +49,16 @@ ui <- navbarPage("River Erosion Model",
                              trigger = "hover"))
           ),
           
+          br(),
+          
+          fluidRow(
+            column(12, align = "center",
+                   actionButton("load_inputs", "Load Inputs from Previous Simulation",
+                                style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+          ),
+          
+          br(),
+          
           #Get dx, dt, dt_output
           fluidRow(
             column(4,
@@ -91,7 +101,8 @@ ui <- navbarPage("River Erosion Model",
                                                          icon = icon("question"),
                                                          style = "info",
                                                          size = "extra-small")),
-                               choices = list("Reach", "Profile"),
+                               choices = list("Reach" = "reach", 
+                                              "Profile" = "profile"),
                                selected = "Reach"),
                    bsPopover(id = "q4",
                              title = "Input Type",
@@ -547,20 +558,24 @@ ui <- navbarPage("River Erosion Model",
                  tabPanel("XS Plots",
                           
                           fluidRow(
-                            # column(6, align = "center",
-                            #        textInput("XS_reach", "Enter reach numbers to plot XS [separate by comma]",
-                            #                  "1")),
-                            # column(6, align = "center",
-                            #        textInput("XS_numbers", "Enter XS numbers [one for each reach, separate by comma]",
-                            #                  "1"))
                             column(12, align = "center",
                                    numericInput("n_XS_plot", "Enter number of XS to plot", 1))
                           ),
                           
                           fluidRow(
                             column(3),
-                            column(6, h3("Enter reach and XS numbers for each XS to plot:"),
-                            rHandsontableOutput("XS_plot_numbers")),
+                            column(6, h3("Enter reach and XS numbers for each XS to plot:",
+                                         bsButton("q16", label = "",
+                                                  icon = icon("question"),
+                                                  style = "info",
+                                                  size = "extra-small")),
+                                  bsPopover(id = "q16",
+                                            title = "XS Plotting",
+                                            content = "If the supplied reach-XS combination does not exisit (e.g. there is no XS 11 in reach 1), no plot will show.",
+                                            placement = "right",
+                                            trigger = "hover"),
+                                  rHandsontableOutput("XS_plot_numbers")),
+                            
                             column(3)
                             
                           ),
