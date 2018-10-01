@@ -32,6 +32,7 @@ server <- function(input, output, session){
                                                               "Both" = "both"),
                       selected = model_inputs$bank_erosion)
     
+    #Link
     link <- read.table(file.path(input$file_path, "Input link.txt"), sep = " ")
     
     n_reaches <- ncol(link)
@@ -60,8 +61,137 @@ server <- function(input, output, session){
     })
     
     #Slopes
-    bed_z <- read.table(file.path(input$file_path, "Input z.txt"))
+    bed_z <- read.table(file.path(input$file_path, "Input z.txt"))$V1
     
+    slopes <- rep(0, input$n_reaches)
+    slopes[input$n_reaches] <- (bed_z[input$n_reaches] - bed_z[input$n_reaches + 1]) / lengths[input$n_reaches, 1]
+    for (i in (input$n_reaches - 1):1){
+      index <- which(i == link, arr.ind = TRUE)[2]
+      slopes[i] <- (bed_z[i] - bed_z[index]) / lengths[i, 1]
+    }
+    
+    output$slope <- renderRHandsontable({
+      rhandsontable(data = data.frame(slope = slopes),
+                    colHeaders = "Initial Slope [m/m]", digits = 5) %>%
+        hot_col(col = 1, type = "numeric", format = "0.00000")
+    })
+    
+    #Width
+    width <- read.table(file.path(input$file_path, "Input width.txt"))
+    output$width <- renderRHandsontable({
+      rhandsontable(data = t(width),
+                    colHeaders = sapply(1:input$n_reaches, function(x){paste0("Reach", x)}),
+                    rowHeaders = "1")
+    })
+    
+    #Bank geometry
+    bank_geom <- read.table(file.path(input$file_path, "Input RB geometry.txt"))
+    output$bank_geom <- renderRHandsontable({
+      rhandsontable(data = bank_geom,
+                    colHeaders = c("Bank height [m]",
+                                   "Toe height [m]",
+                                   "Bank angle [degrees]",
+                                   "Toe angle [degrees]"),
+                    rowHeaders = 1:input$n_reaches)
+    })
+    
+    #FP Geometry
+    fp_geom <- read.table(file.path(input$file_path, "Input fp geometry.txt"))
+    output$fp_geom <- renderRHandsontable({
+      rhandsontable(data = fp_geom,
+                    colHeaders = c("Floodplain angle [degrees]",
+                                   "Left fp width [m]",
+                                   "Right fp width [m]"),
+                    rowHeaders = 1:input$n_reaches)
+    })
+    
+    #Manning's n
+    n_val <- read.table(file.path(input$file_path, "Input n values.txt"))
+    output$n_val <- renderRHandsontable({
+      rhandsontable(data = n_val,
+                    colHeaders = c("Channel n",
+                                   "Floodplain n"),
+                    rowHeaders = 1:input$n_reaches) %>%
+        hot_col(col = 1:2, format = "0.000")
+    })
+    
+    #Grain size
+    ds <- read.table(file.path(input$file_path, "Input Ds.txt"))
+    n_ds <- nrow(ds)
+    if (n_ds == 1){
+      updateNumericInput(session, "single_Ds", value = ds[1,1])
+    }else{
+      updateNumericInput(session, "n_Ds", value = n_ds)
+      
+      output$Ds <- renderRHandsontable({
+        rhandsontable(data = ds,
+                      colHeaders = "Ds") %>%
+          hot_col(col = 1, format = "0.00")
+      })
+      
+      #Get GSD
+      ps <- read.table(file.path(input$file_path, "Input ps.txt"))
+      D50 <- apply(ps, 1, calc_Dx, Ds = ds[,1])
+      #sg <- apply(ps, 1, calc_sg, Ds = ds[,1])
+      
+      output$gsd <- renderRHandsontable({
+        rhandsontable(data = data.frame(D50 = D50, 
+                                        Spread = rep(0, input$n_reaches)),
+                      rowHeaders = 1:input$n_reaches)
+      })
+    }
+    
+    #Discharge and sediment supply
+    Q <- read.table(file.path(input$file_path, "Input Q.txt"))
+    
+    sed_supply <- read.table(file.path(input$file_path, "Input sed supply.txt"))
+    
+    if (length(unique(Q[,1])) == 1){
+      output$Q_const <- renderRHandsontable({
+        rhandsontable(data = data.frame(Q = as.numeric(Q[1, ])),
+                      rowHeaders = 1:input$n_reaches)
+      })
+    }
+    
+    if (length(unique(sed_supply[,1])) == 1){
+      output$sed_supply1 <- renderRHandsontable({
+        rhandsontable(data = data.frame(sed_supply = as.numeric(sed_supply[1, ])),
+                      rowHeaders = 1:input$n_reaches)
+      })
+    }
+    
+    #Bank properties
+    bank_soil <- read.table(file.path(input$file_path, "Input bank prop.txt"))
+    output$bank_soil <- renderRHandsontable({
+      rhandsontable(data = bank_soil,
+                    rowHeaders = 1:input$n_reaches,
+                    colHeaders = c("tau_c", "k", "cohesion_bank",
+                                   "cohesion_toe", "phi_bank",
+                                   "phi_toe", "weight_bank",
+                                   "weight_toe", "P_bank",
+                                   "P_bed", "bedload_bank",
+                                   "bedload_bed"))
+    })
+    
+    if (file.exists(file.path(input$file_path, "Input meandering.txt"))){
+      meander <- read.table(file.path(input$file_path, "Input meandering.txt"))
+      output$meander_inputs <- renderRHandsontable({
+        rhandsontable(data = meander,
+                      rowHeaders = 1:input$n_reaches,
+                      colHeaders =c("Sinuosity", "Rc"))
+      })
+      
+    }
+    
+    if (file.exists(file.path(input$file_path, "Input knickpoints.txt"))){
+      knicks <- read.table(file.path(input$file_path, "Input knickpoints.txt"))
+      output$knickpoints <- renderRHandsontable({
+        rhandsontable(data = knicks,
+                      rowHeaders = 1:input$n_knicks,
+                      colHeaders = c("reach", "DS_distance",
+                                     "Elev", "Height", "Erodibility"))
+      })
+    }
                           
   })
   
@@ -189,7 +319,8 @@ server <- function(input, output, session){
   
   output$width <- renderRHandsontable({
     rhandsontable(data = as.data.frame(matrix(rep(0, input$n_reaches), 
-                                nrow = 1)))
+                                nrow = 1)),
+                  colHeaders = sapply(1:input$n_reaches, function(x){paste0("Reach", x)}))
   })
   
   output$bank_geom <- renderRHandsontable({
@@ -234,25 +365,9 @@ server <- function(input, output, session){
                 col.names = FALSE, row.names = FALSE)
   })
   
-  #Ds_init <- reactive({matrix(1:input$n_Ds, nrow = 1)})
-  Ds_init <- reactive({data.frame(Ds = 1:input$n_Ds)})
-  Ds_new <- reactive({
-    if(is.null(input$Ds)){
-      return(Ds_init())
-    }else if (!identical(Ds_init(), input$Ds)){
-      df <- hot_to_r(input$Ds)
-      if (input$n_Ds > nrow(df)){
-        df[(nrow(df) + 1):input$n_Ds,] <- 0.0
-      }else if (input$n_Ds < nrow(df)){
-        df <- df[1:input$n_Ds, , drop = FALSE]
-      }
-      return(df)
-    }
-  })
-  
   output$Ds <- renderRHandsontable({
-    rhandsontable(Ds_new()) %>%
-      hot_col(col = 1, format = "0.00")
+    rhandsontable(data = data.frame(Ds = rep(0, input$n_Ds))) %>%
+      hot_col(col = 1, format = "0.000")
   })
   
   output$gsd <- renderRHandsontable({

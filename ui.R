@@ -54,7 +54,16 @@ ui <- navbarPage("River Erosion Model",
           fluidRow(
             column(12, align = "center",
                    actionButton("load_inputs", "Load Inputs from Previous Simulation",
-                                style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+                                style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                   bsButton("q19", label = "",
+                            icon = icon("question"),
+                            style = "info",
+                            size = "extra-small"),
+            bsPopover(id = "q19",
+                      title = "Load Inputs",
+                      content = "Loads input from specified file path. Does not work for spread of grain size distribution or non-constant discharge input.",
+                      placement = "right",
+                      trigger = "hover"))
           ),
           
           br(),
@@ -214,7 +223,7 @@ ui <- navbarPage("River Erosion Model",
                
       ),
       
-      #Next page - channel geomtry inputs
+      #Next page - channel geometry inputs
       tabPanel("Channel Geometry Inputs",
                fluidRow(
                  column(12,
@@ -324,7 +333,7 @@ ui <- navbarPage("River Erosion Model",
                                     size = "extra-small")),
                         bsPopover(id = "q13",
                                   title = "Grain Sizes",
-                                  content = "Each reach can have a unique grain size distribution based on supplied D50 and spread. The spread is the geometric standard deviation of the grain size distribution.",
+                                  content = "Each reach can have a unique grain size distribution based on supplied D50 and spread. The spread is the standard deviation of a lognormal distribution used to create the gSD.",
                                   placement = "left",
                                   trigger = "hover"),
                         rHandsontableOutput("gsd"))
@@ -445,7 +454,7 @@ ui <- navbarPage("River Erosion Model",
                                     size = "extra-small")),
                         bsPopover(id = "q11",
                                   title = "Bank Soil Properties",
-                                  content = "Enter bank erosion resistance, weight, pollution concentrtion, etc. See User Guide for more details.",
+                                  content = "Enter bank erosion resistance, weight, pollution concentration, etc. See User Guide for more details.",
                                   placement = "left",
                                   trigger = "hover"),
                         rHandsontableOutput("bank_soil"))
@@ -481,12 +490,30 @@ ui <- navbarPage("River Erosion Model",
                fluidRow(
                  column(6, 
                         conditionalPanel(condition = "input.meandering == 1",
-                          h3("Input Initial Meander Geometry:"),
+                          h3("Input Initial Meander Geometry:",
+                             bsButton("q17", label = "",
+                                      icon = icon("question"),
+                                      style = "info",
+                                      size = "extra-small")),
+                          bsPopover(id = "q17",
+                                    title = "Meander Geometry",
+                                    content = "Sinuosity and average bend radius of curvature (m) for each reach.",
+                                    placement = "right",
+                                    trigger = "hover"),
                           rHandsontableOutput("meander_inputs"))),
                  
                  column(6,
                         conditionalPanel(condition = "input.n_knicks > 0",
-                          h3("Input Knickpoints:"),
+                          h3("Input Knickpoints:",
+                             bsButton("q18", label = "",
+                                      icon = icon("question"),
+                                      style = "info",
+                                      size = "extra-small")),
+                          bsPopover(id = "q18",
+                                    title = "Knickpoints",
+                                    content = "Input reach of knickpoint, downstream distance from top of reach (m), elevation of the top of the knickoint (m), knickpoint height (m), and erodiblity (cm/Pa/hr).",
+                                    placement = "right",
+                                    trigger = "hover"),
                           rHandsontableOutput("knickpoints")))
                ),
                
